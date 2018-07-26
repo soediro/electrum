@@ -23,7 +23,7 @@
 import binascii
 import os, sys, re, json
 from collections import defaultdict
-from typing import NamedTuple, Union, TYPE_CHECKING, Tuple, Optional
+from typing import NamedTuple, Union, TYPE_CHECKING, Tuple, Optional, Sequence
 from datetime import datetime
 import decimal
 from decimal import Decimal
@@ -39,6 +39,7 @@ import urllib.request, urllib.parse, urllib.error
 import builtins
 import json
 import time
+import ipaddress
 
 import aiohttp
 from aiohttp_socks import SocksConnector, SocksVer
@@ -1000,3 +1001,19 @@ class NetworkJobOnDefaultServer(PrintError):
         s = self.interface.session
         assert s is not None
         return s
+
+def is_ip_address(x: Union[str, bytes]) -> bool:
+    if isinstance(x, bytes):
+        x = x.decode("utf-8")
+    try:
+        ipaddress.ip_address(x)
+        return True
+    except ValueError:
+        return False
+
+
+def list_enabled_bits(x: int) -> Sequence[int]:
+    """e.g. 77 (0b1001101) --> (0, 2, 3, 6)"""
+    binary = bin(x)[2:]
+    rev_bin = reversed(binary)
+    return tuple(i for i, b in enumerate(rev_bin) if b == '1')
