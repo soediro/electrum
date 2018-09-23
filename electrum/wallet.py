@@ -59,6 +59,7 @@ from .address_synchronizer import (AddressSynchronizer, TX_HEIGHT_LOCAL,
 from .paymentrequest import (PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED,
                              InvoiceStore)
 from .contacts import Contacts
+from .lnworker import LNWorker
 
 if TYPE_CHECKING:
     from .network import Network
@@ -181,6 +182,10 @@ class Abstract_Wallet(AddressSynchronizer):
         self.contacts = Contacts(self.storage)
 
         self.coin_price_cache = {}
+
+    def start_network(self, network):
+        AddressSynchronizer.start_network(self, network)
+        self.lnworker = LNWorker(self, network)
 
     def load_and_cleanup(self):
         self.load_keystore()
