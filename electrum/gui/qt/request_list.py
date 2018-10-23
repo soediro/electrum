@@ -70,7 +70,7 @@ class RequestList(MyTreeWidget):
         if request_type == REQUEST_TYPE_BITCOIN:
             req = self.parent.get_request_URI(key)
         elif request_type == REQUEST_TYPE_LN:
-            req = self.wallet.lnworker.invoices.get(key)
+            preimage, req = self.wallet.lnworker.invoices.get(key)
         self.parent.receive_address_e.setText(req)
 
     def on_update(self):
@@ -111,23 +111,22 @@ class RequestList(MyTreeWidget):
             item.setData(1, Qt.UserRole, address)
             self.addTopLevelItem(item)
         # lightning
-        for payreq_key, r in self.wallet.lnworker.invoices.items():
+        for payreq_key, (preimage_hex, invoice) in self.wallet.lnworker.invoices.items():
             from electrum.lnaddr import lndecode
             import electrum.constants as constants
-            lnaddr = lndecode(r, expected_hrp=constants.net.SEGWIT_HRP)
+            lnaddr = lndecode(invoice, expected_hrp=constants.net.SEGWIT_HRP)
             amount_sat = lnaddr.amount*COIN if lnaddr.amount else None
             amount_str = self.parent.format_amount(amount_sat) if amount_sat else ''
+            description = ''
             for k,v in lnaddr.tags:
                 if k == 'd':
                     description = v
                     break
-                else:
-                    description = ''
             date = format_time(lnaddr.date)
-            item = QTreeWidgetItem([date, r, description, amount_str, ''])
+            item = QTreeWidgetItem([date, invoice, description, amount_str, ''])
             item.setIcon(1, self.icon_cache.get(":icons/lightning.png"))
             item.setData(0, Qt.UserRole, REQUEST_TYPE_LN)
-            item.setData(1, Qt.UserRole, payreq_key)
+            item.setData(1, Qt.UserRole, payreq_key)  # RHASH hex
             self.addTopLevelItem(item)
 
     def create_menu(self, position):
@@ -163,7 +162,7 @@ class RequestList(MyTreeWidget):
 
     def create_menu_ln_payreq(self, item):
         payreq_key = item.data(1, Qt.UserRole)
-        req = self.wallet.lnworker.invoices.get(payreq_key)
+        preimage, req = self.wallet.lnworker.invoices.get(payreq_key)
         if req is None:
             self.update()
             return
